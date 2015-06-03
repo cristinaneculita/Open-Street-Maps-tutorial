@@ -1,0 +1,248 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+   
+
+    <title>Leaflet and OpenStreetMaps</title>
+
+    <style>
+        #map {
+            height:600px;
+        }
+    </style>
+</head>
+<body>
+  
+    <script src="jquery-1.11.3.min.js"></script>
+
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script src="leaflet-editable-polyline.js"></script>
+    <script src="editable.js"></script>
+    <div id="map"></div>
+    <input type="radio" name="tool" value="dot" >Dot<br />
+    <input type="radio" name="tool" value="circle">Circle<br />
+    <input type="radio" name="tool" value="polyline" checked>Polyline<br />
+
+    <script>
+        
+
+        var polylineOptions = {
+            // The user can add new polylines by clicking anywhere on the map:
+            newPolylines: true,
+            newPolylineConfirmMessage: 'Add a new polyline here?',
+            // Show editable markers only if less than this number are in map bounds:
+       
+            maxMarkers: 100
+        }
+
+        var map = L.map('map').setView([47.1, 27.5], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            id: 'examples.map-i875mjb7',
+            accessToken: 'your.mapbox.public.access.token'
+        }).addTo(map);
+
+        L.NewLineControl = L.Control.extend({
+
+            options: {
+                position: 'topleft'
+            },
+
+            onAdd: function (map) {
+                var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
+                    link = L.DomUtil.create('a', '', container);
+
+                link.href = '#';
+                link.title = 'Create a new line';
+                link.innerHTML = '/\\/';
+                L.DomEvent.on(link, 'click', L.DomEvent.stop)
+                          .on(link, 'click', function () {
+                              map.editTools.startPolyline();
+                          });
+
+                return container;
+            }
+        });
+
+        L.NewPolygonControl = L.Control.extend({
+
+            options: {
+                position: 'topleft'
+            },
+
+            onAdd: function (map) {
+                var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
+                    link = L.DomUtil.create('a', '', container);
+
+                link.href = '#';
+                link.title = 'Create a new polygon';
+                link.innerHTML = '▱';
+                L.DomEvent.on(link, 'click', L.DomEvent.stop)
+                          .on(link, 'click', function () {
+                              map.editTools.startPolygon();
+                          });
+
+                return container;
+            }
+        });
+
+        L.NewMarkerControl = L.Control.extend({
+
+            options: {
+                position: 'topleft'
+            },
+
+            onAdd: function (map) {
+                var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
+                    link = L.DomUtil.create('a', '', container);
+
+                link.href = '#';
+                link.title = 'Add a new marker';
+                link.innerHTML = '⚫';
+                L.DomEvent.on(link, 'click', L.DomEvent.stop)
+                          .on(link, 'click', function () {
+                              map.editTools.startMarker();
+                          });
+
+                return container;
+            }
+        });
+
+        map.addControl(new L.NewMarkerControl());
+        map.addControl(new L.NewLineControl());
+        map.addControl(new L.NewPolygonControl());
+
+        var marker = L.marker([45.05, 25.9]).addTo(map);
+       
+        var firstCirclePoint;
+        var secondCirclePoint;
+        var circleCenter;
+        var poli = [];
+        var polygon;
+        var lastLineMidMarker;
+     
+
+        var icon1 = L.icon({ iconUrl: 'editmarker.png', iconSize: [11, 11], iconAnchor: [6, 6] });
+        var icon2 = L.icon({ iconUrl: 'editmarker2.png', iconSize: [11, 11], iconAnchor: [6, 6] });
+
+        startDragMid = function (e) {
+            console.log('start drag mid');
+			map.on('mousemove', mouseMove);
+        }
+        endDragMid = function (e) {
+            console.log('end drag mid');
+			map.off('mousemove', mouseMove);
+        }
+
+        startDrag = function (e,param) {
+            console.log('start drag '+param);
+			map.on('mousemove', mouseMove);
+           // $.inArray(e.latlng, poli);
+           
+        }
+        endDrag = function (e) {
+            console.log('end drag ');
+			map.off('mousemove', mouseMove);
+        }
+		mouseMoveMid=function(e){
+			console.log('moving mid');
+		}
+		mouseMove = function(e){
+		    
+			console.log('moving');
+		}
+        function onMapClick(e) {
+
+            switch (selected)
+            { 
+                case 'dot': 
+                    L.marker(e.latlng).addTo(map);                    
+                    break;
+                case 'circle':
+                    if (!firstCirclePoint) {
+                        firstCirclePoint = e.latlng;
+                        circleCenter = L.circle(firstCirclePoint, 2, {
+                            color: 'red',
+                            fillColor: '#f03',
+                            fillOpacity: 0.5
+                        }).addTo(map);
+                    }
+                    else {
+                        secondCirclePoint = e.latlng;
+                        var r = firstCirclePoint.distanceTo(secondCirclePoint);
+                        var circle = L.circle(firstCirclePoint, r, {
+                            color: 'red',
+                            fillColor: '#f03',
+                            fillOpacity: 0.5
+                        }).addTo(map);
+                        firstCirclePoint = undefined;
+                        map.removeLayer(circleCenter);
+                        circle.on('contextmenu',
+                            function (e) {
+                                map.removeLayer(circle);
+
+                            });
+                    }
+                    break;
+                case 'polyline':
+                  //  if (poli.length > 0)
+                  //      map.removeLayer(polygon);
+                  //  poli.push(e.latlng);
+                  //  var newMarker = L.marker(e.latlng, { draggable: true, icon: icon1 }).addTo(map);
+				
+                  // // newMarker.on('dragstart', startDrag );
+                  ////  newMarker.on('dragend', endDrag);
+					
+                  //  polygon = L.polygon(poli, {
+                  //      color: 'red',
+                  //      fillColor: '#f03',
+                  //      fillOpacity: 0.5
+                  //  }).addTo(map);
+                  //  if (poli.length > 1) {
+                  //      var previousPoint = poli[poli.length -2];
+                  //      var newMidMarker = L.marker([(e.latlng.lat + previousPoint.lat) / 2.,
+                  //                         (e.latlng.lng + previousPoint.lng) / 2.],
+                  //                        { draggable: true, icon: icon2 }).addTo(map);
+
+                  //   //   newMidMarker.on('dragstart', startDragMid);
+                  //   //   newMidMarker.on('dragend', endDragMid);
+					
+
+                  //  }
+                  //  if (poli.length > 2) {
+                  //      var firstPoint = poli[0];
+                  //      if (lastLineMidMarker)
+                  //          map.removeLayer(lastLineMidMarker);
+                  //      lastLineMidMarker = L.marker([(e.latlng.lat + firstPoint.lat) / 2.,
+                  //                         (e.latlng.lng + firstPoint.lng) / 2.],
+                  //                        { draggable: true, icon: icon2 }).addTo(map);
+                  //      lastLineMidMarker.on('dragstart', startDragMid);
+                  //      lastLineMidMarker.on('dragend', endDragMid);
+
+                  //  }
+
+                    map.editTools.startPolygon();
+                    
+                    break;
+                    
+                   
+                  
+
+                
+            }
+        }
+      
+        map.on('click', onMapClick);        map.on('contextmenu', null);
+
+
+
+
+
+       
+    </script>
+    
+
+
+</body>
+</html>
