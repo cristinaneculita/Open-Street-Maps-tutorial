@@ -72,6 +72,7 @@
     <Content Include="index.bk.html" />
     <Content Include="index.html" />
     <Content Include="index2.html" />
+    <Content Include="index3.html" />
     <Content Include="jquery-1.11.3.min.js" />
     <Content Include="leaflet-editable-polyline.js" />
     <Content Include="tile.png" />

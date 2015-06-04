@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+
+
+    <title>Leaflet and OpenStreetMaps</title>
+
+    <style>
+        #map {
+            height: 600px;
+        }
+    </style>
+</head>
+<body>
+
+    <script src="jquery-1.11.3.min.js"></script>
+
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script src="leaflet-editable-polyline.js"></script>
+
+    <div id="map"></div>
+
+
+    <script type="text/javascript">
+
+
+       
+      
+
+        var map = L.map('map', { editable: true }).setView([47.1, 27.5], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            id: 'examples.map-i875mjb7',
+            accessToken: 'your.mapbox.public.access.token'
+        }).addTo(map);
+
+
+        var poli = [];
+        var polygon;
+        function onMapClick ( e ) {
+            console.log('click');
+
+            poli.push(e.latlng);
+            if (polygon)
+                map.removeLayer(polygon);
+         
+
+            polygon = L.polygon(poli, {
+                opacity: 0.8,
+                color: 'red',
+                fillColor: '#90A8FF',
+                fillOpacity: 0.5
+            }).addTo(map);
+            
+        }
+
+        map.on('click', onMapClick);
+
+   
+
+    </script>
+</body>
+
+</html>
