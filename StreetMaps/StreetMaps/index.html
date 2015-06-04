@@ -295,6 +295,11 @@
         var rightIndex = previousIndex(currentMarkerIndex, poli.length);
         var leftIndex = nextIndex(currentMarkerIndex, poli.length);
 
+        if (poli.length == 3) {
+            map.removeLayer(midMarkers[2]);
+            midMarkers.splice(2, 1);
+        }
+
         midPoint = [
                (poli[leftIndex].lat + poli[rightIndex].lat) / 2.,
                (poli[leftIndex].lng + poli[rightIndex].lng) / 2.
@@ -317,13 +322,6 @@
 
         map.removeLayer(lastMarkerDragged);
 
-        //updatePoligon();
-
-        //if (undoIconMarker)
-        //    map.removeLayer(undoIconMarker);
-
-        //var newMarker = L.marker(poli[currentMarkerIndex], { draggable: true, icon: icon1 }).addTo(map);
-        //addEventsToMarkers(newMarker);
 
     }
 
