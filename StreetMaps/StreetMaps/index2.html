@@ -1,34 +1,83 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-    <meta charset='utf-8'>
-    <title>Leaflet.Editable demo</title>
-    <link rel="stylesheet" href="http://leaflet-cdn.s3.amazonaws.com/build/master/leaflet.css" />
-    <script src="http://leaflet-cdn.s3.amazonaws.com/build/master/leaflet.js"></script>
-    <script src="editable.js"></script>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
 
-    <style type='text/css'>
-        body {
-            margin: 0;
-            padding: 0;
+
+    <title>Leaflet and OpenStreetMaps</title>
+
+    <style>
+        #map {
+            height: 600px;
         }
 
-        #map {
+        .div-icon {
             position: absolute;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            left: 0;
-            width: 100%;
+            left: 0px;
+            top: 0px;
+            width: 9px;
+            height: 9px;
+            border: 1px solid rgb(255, 0, 0);
+            border-radius: 6px;
+            opacity: 1;
+            background-color: white;
+        }
+
+        .div-icon-mouse-over {
+            background-color: rgb(255, 127, 127);
+        }
+
+        .div-icon-middle {
+            opacity: 0.5;
         }
     </style>
 </head>
 <body>
-    <div id='map'></div>
+
+    <script src="jquery-1.11.3.min.js"></script>
+
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script src="leaflet-editable-polyline.js"></script>
+
+    <div id="map"></div>
+
 
     <script type="text/javascript">
 
-        
+
+        var icon1 = L.divIcon({ iconSize: [9, 9], iconAnchor: [6, 6], className: 'div-icon' });
+        var icon2 = L.divIcon({ iconSize: [9, 9], iconAnchor: [6, 6], className: 'div-icon div-icon-middle' });
+        var icon3 = L.divIcon({ iconSize: [9, 9], iconAnchor: [6, 6], className: 'div-icon div-icon-mouse-over' });
+        var icon4 = L.divIcon({ iconSize: [9, 9], iconAnchor: [6, 6], className: 'div-icon div-icon-middle div-icon-mouse-over' });
+
+        var lastLineMidMarker;
+        var poli = [];
+        var currentMarkerIndex;
+        var midMarkers = [];
+        var polyline;
+        var polyline2;
+        var undoIcon = L.icon({
+            iconUrl: 'undo_simple.png',
+            iconSize: [30, 27],
+            iconAnchor: [-8, 13],
+            draggable: true
+        });
+        var undoOverIcon = L.icon({
+            iconUrl: 'undo_click.png',
+            iconSize: [30, 27],
+            iconAnchor: [-8, 13],
+            draggable: true
+        });
+        var options = {
+            color: 'black',
+            opacity: 0.8,
+            weight: 1
+            
+        };
+        var undoIconMarker;
+        var undoLatLng;
+        var lastMarkerDragged;
+
         var map = L.map('map', { editable: true }).setView([47.1, 27.5], 8);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
@@ -36,10 +85,383 @@
             accessToken: 'your.mapbox.public.access.token'
         }).addTo(map);
 
-       
-        map.editTools.startPolygon();
+
+        previousIndex = function (index, count) {
+            return index == 0 ? count - 1 : index - 1;
+        }
+
+        nextIndex = function (index, count) {
+            return index == count - 1 ? 0 : index + 1;
+        }
+
+        deleteMarker = function () {
+            map.removeLayer(this);
+            currentMarkerIndex = $.inArray(this._latlng, poli);
+            poli.splice(currentMarkerIndex, 1);
+            map.removeLayer(polyline);
+            polyline = L.polyline(poli, options).addTo(map);
+
+            var len = midMarkers.length;
+            var polilen = poli.length;
+            if (poli.length == 1) {
+                map.removeLayer(midMarkers[0]);
+                midMarkers.splice(0, 1);
+            }
+            if (poli.length > 1) {
+                var removeHowMany = 0;
+                if (currentMarkerIndex != 0) {
+                    var rightMidMarker = midMarkers[previousIndex(currentMarkerIndex, len)];
+                    map.removeLayer(rightMidMarker);
+                    removeHowMany++;
+                }
+                if (currentMarkerIndex != polilen) {
+                    var leftMidMarker = midMarkers[currentMarkerIndex];
+                    map.removeLayer(leftMidMarker);
+                    removeHowMany++;
+                }
+                
+                if (currentMarkerIndex == 0)
+                    midMarkers.splice(0, removeHowMany);
+                else 
+                {
+                    midMarkers.splice(currentMarkerIndex-1, removeHowMany);
+                }
+               
+
+
+            }
+
+            if (poli.length >= 2 && currentMarkerIndex<len) {
+                if (currentMarkerIndex != 0) {
+                    var rightPoint = poli[previousIndex(currentMarkerIndex, polilen)];
+                    if (currentMarkerIndex <= polilen - 1)
+                        var leftPoint = poli[currentMarkerIndex];
+                    else {
+                        var leftPoint = poli[0];
+                    }
+                    var midPoint = [
+                        (rightPoint.lat + leftPoint.lat) / 2.,
+                        (rightPoint.lng + leftPoint.lng) / 2.
+                    ];
+                    var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
+                    addEventsToMiddleMarkers(newMidMarker);
+
+                    midMarkers.splice(previousIndex(currentMarkerIndex, len), 0, newMidMarker);
+                }
+
+            }
+
+            if (undoIconMarker)
+                map.removeLayer(undoIconMarker);
+            console.log('markers count: ' + midMarkers.length);
+
+
+        }
+
+        addEventsToMarkers = function (marker) {
+            marker.on('dragstart', startDrag);
+            marker.on('dragend', endDrag);
+            marker.on('mouseover', mouseOverMarker);
+            marker.on('mouseout', mouseOutMarker);
+            marker.on('contextmenu', deleteMarker);
+            marker.on('click', clickOnMarker);
+        }
+
+        addEventsToMiddleMarkers = function (marker) {
+            marker.on('dragstart', startDragMid);
+            marker.on('dragend', endDragMid);
+            marker.on('mouseover', mouseOverMarkerMiddle);
+            marker.on('mouseout', mouseOutMarkerMid);
+            marker.on('click', clickOnMarker);
+        }
+        clickOnMarker = function () {
+        }
+        updatePolyline = function () {
+            map.removeLayer(polyline);
+            polyline = L.polyline(poli, options).addTo(map);
+            if (polyline2)
+                map.removeLayer(polyline2);
+            var len = poli.length;
+            if (len == 1) {
+                //update middle marker
+                map.removeLayer(midMarkers[0]);
+                var midPoint = [
+                    (poli[0].lat + poli[1].lat) / 2.,
+                    (poli[0].lng + poli[1].lng) / 2.
+                ];
+                var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
+
+                addEventsToMiddleMarkers(newMidMarker);
+                midMarkers[0] = newMidMarker;
+
+            }
+            if (len > 1) {
+
+                //update right middle marker
+                if (currentMarkerIndex != 0) {
+                    var rightMidMarker = midMarkers[previousIndex(currentMarkerIndex, len)];
+                    map.removeLayer(rightMidMarker);
+                    var midPoint = [
+                        (poli[currentMarkerIndex].lat + poli[previousIndex(currentMarkerIndex, len)].lat) / 2.,
+                        (poli[currentMarkerIndex].lng + poli[previousIndex(currentMarkerIndex, len)].lng) / 2.
+                    ];
+                    var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
+
+                    addEventsToMiddleMarkers(newMidMarker);
+                    midMarkers.splice(previousIndex(currentMarkerIndex, len), 1, newMidMarker);
+                }
+                if (len > 2) {
+                    //update left middle marker
+                    if (currentMarkerIndex != len - 1) {
+                        var leftMidMarker = midMarkers[currentMarkerIndex];
+                        map.removeLayer(leftMidMarker);
+                        var midPoint = [
+                            (poli[currentMarkerIndex].lat + poli[nextIndex(currentMarkerIndex, len)].lat) / 2.,
+                            (poli[currentMarkerIndex].lng + poli[nextIndex(currentMarkerIndex, len)].lng) / 2.
+                        ];
+                        var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
+
+                        addEventsToMiddleMarkers(newMidMarker);
+                        midMarkers.splice(currentMarkerIndex, 1, newMidMarker);
+                    }
+                }
+            }
+
+        }
+
+
+        startDragMid = function (e) {
+
+            undoLatLng = this._latlng;
+            lastMarkerDragged = this;
+
+            currentMarkerIndex = $.inArray(this, midMarkers);
+            console.log('element ' + currentMarkerIndex + " din " + midMarkers.length);
+            map.on('mousemove', mouseMoveMid);
+            map.off('click', onMapClick);
+
+        }
+        endDragMid = function (e) {
+
+            poli.splice(currentMarkerIndex + 1, 0, this._latlng);
+            map.off('mousemove', mouseMoveMid);
+
+            if (polyline2)
+                map.removeLayer(polyline2);
+
+            map.removeLayer(polyline);
+            polyline = L.polyline(poli, options).addTo(map);
+
+            //add left and right middle markers
+            var rightIndex = currentMarkerIndex;
+            var midIndex = nextIndex(currentMarkerIndex, poli.length)
+            var leftIndex = nextIndex(nextIndex(currentMarkerIndex, poli.length), poli.length);
+            console.log('r: ' + rightIndex + ', m: ' + midIndex + ', l: ' + leftIndex + ', length: ' + poli.length);
+            var midPoint = [
+                (poli[rightIndex].lat + poli[midIndex].lat) / 2.,
+                (poli[rightIndex].lng + poli[midIndex].lng) / 2.
+            ];
+            var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
+            addEventsToMiddleMarkers(newMidMarker);
+            midMarkers.splice(rightIndex, 1, newMidMarker);
+
+            midPoint = [
+                (poli[leftIndex].lat + poli[midIndex].lat) / 2.,
+                (poli[leftIndex].lng + poli[midIndex].lng) / 2.
+            ];
+            var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
+            addEventsToMiddleMarkers(newMidMarker);
+            midMarkers.splice(midIndex, 0, newMidMarker);
+
+           
+
+            console.log('markers count: ' + midMarkers.length);
+
+            if (undoIconMarker)
+                map.removeLayer(undoIconMarker);
+            undoIconMarker = L.marker(this._latlng, { icon: undoIcon }).addTo(map);
+            undoIconMarker.on('mouseover', undoIconMouseEnter);
+            undoIconMarker.on('mouseout', undoIconMouseLeave);
+            undoIconMarker.on('click', undoMid);
+
+            map.removeLayer(this);
+            var newMarker = L.marker(this._latlng, { draggable: true, icon: icon1 }).addTo(map);
+            addEventsToMarkers(newMarker);
+            lastMarkerDragged = newMarker;
+            currentMarkerIndex = midIndex;
+            setTimeout(function () { map.on('click', onMapClick); }, 300);
+        }
+
+        mouseMoveMid = function (e) {
+            var poli2 = poli.slice();
+            poli2.splice(nextIndex(currentMarkerIndex, poli2.length), 0, e.latlng);
+            if (polyline2)
+                map.removeLayer(polyline2);
+
+            polyline2 = L.polyline(poli2, options).addTo(map);
+
+        }
+
+        undoMid = function () {
+
+            if (undoIconMarker)
+                map.removeLayer(undoIconMarker);
+
+            console.log('current: ' + currentMarkerIndex);
+
+            //undoLatLng = this._latlng;
+            var rightIndex = previousIndex(currentMarkerIndex, poli.length);
+            var leftIndex = nextIndex(currentMarkerIndex, poli.length);
+
+         
+            midPoint = [
+                (poli[leftIndex].lat + poli[rightIndex].lat) / 2.,
+                (poli[leftIndex].lng + poli[rightIndex].lng) / 2.
+            ];
+            var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
+            addEventsToMiddleMarkers(newMidMarker);
+            map.removeLayer(midMarkers[rightIndex]);
+            map.removeLayer(midMarkers[currentMarkerIndex]);
+            midMarkers.splice(rightIndex, 2, newMidMarker);
+
+
+            poli.splice(currentMarkerIndex, 1)
+            map.removeLayer(polyline);
+            polyline = L.polyline(poli,options).addTo(map);
+
+            map.removeLayer(lastMarkerDragged);
+
+
+        }
+
+        startDrag = function (e) {
+            undoLatLng = this._latlng;
+            lastMarkerDragged = this;
+            currentMarkerIndex = $.inArray(this._latlng, poli);
+
+            console.log('element ' + currentMarkerIndex + " din " + poli.length);
+            map.on('mousemove', mouseMove);
+            map.off('click', onMapClick);
+
+        }
+
+        endDrag = function (e) {
+
+            poli.splice(currentMarkerIndex, 1, this._latlng)
+            map.off('mousemove', mouseMove);
+
+            updatePolyline();
+
+            if (undoIconMarker)
+                map.removeLayer(undoIconMarker);
+            undoIconMarker = L.marker(this._latlng, { icon: undoIcon }).addTo(map);
+            undoIconMarker.on('mouseover', undoIconMouseEnter);
+            undoIconMarker.on('mouseout', undoIconMouseLeave);
+            undoIconMarker.on('click', undo);
+
+            setTimeout(function () { map.on('click', onMapClick); }, 300);
+
+        }
+
+        mouseMove = function (e) {
+
+            var poli2 = poli.slice();
+            poli2.splice(currentMarkerIndex, 1, e.latlng);
+            if (polyline2)
+                map.removeLayer(polyline2);
+
+            polyline2 = L.polyline(poli2, options).addTo(map);
+
+        }
+
+        undo = function () {
+
+            map.removeLayer(lastMarkerDragged);
+            poli.splice(currentMarkerIndex, 1, undoLatLng)
+
+            updatePolyline();
+
+            if (undoIconMarker)
+                map.removeLayer(undoIconMarker);
+
+            var newMarker = L.marker(poli[currentMarkerIndex], { draggable: true, icon: icon1 }).addTo(map);
+            addEventsToMarkers(newMarker);
+
+        }
+
+
+        undoIconMouseEnter = function () {
+            this.setIcon(undoOverIcon);
+        }
+        undoIconMouseLeave = function () {
+            this.setIcon(undoIcon);
+        }
+
+        mouseOverMarkerMiddle = function () {
+            console.log('mid: ' + $.inArray(this, midMarkers));
+            this.setIcon(icon4);
+           
+        }
+        mouseOverMarker = function () {
+            this.setIcon(icon3);
+            console.log('no: ' + $.inArray(this._latlng, poli));
+
+        }
+        mouseOutMarkerMid = function () {
+            this.setIcon(icon2);
+        }
+        mouseOutMarker = function () {
+            this.setIcon(icon1);
+        }
+
+
+        function onMapClick(e) {
+            console.log('click');
+
+            poli.push(e.latlng);
+            if (polyline)
+                map.removeLayer(polyline);
+            var newMarker = L.marker(e.latlng, { draggable: true, icon: icon1 }).addTo(map);
+
+            addEventsToMarkers(newMarker);
+
+            polyline = L.polyline(poli, options).addTo(map);
+            if (poli.length > 1) {
+                var previousPoint = poli[poli.length - 2];
+                var midPoint = [
+                    (e.latlng.lat + previousPoint.lat) / 2.,
+                    (e.latlng.lng + previousPoint.lng) / 2.
+                ];
+                var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
+
+                addEventsToMiddleMarkers(newMidMarker);
+                midMarkers.push(newMidMarker);
+
+            }
+           
+
+            if (undoIconMarker)
+                map.removeLayer(undoIconMarker);
+            console.log('markers count: ' + midMarkers.length);
+        }
+
+        map.on('click', onMapClick);
+
+        var corn_rj = new L.LayerGroup();
+        L.marker([-22, -43.20]).addTo(corn_rj),
+            L.marker([-23, -43.50]).addTo(corn_rj);
+        L.polyline([
+            [-22, -43.20],
+            [-23, -43.50]
+        ],
+        { color: '#FFFFFF' }).addTo(corn_rj);
+
+
+        map.addLayer(corn_rj);
 
 
     </script>
+
 </body>
+
 </html>

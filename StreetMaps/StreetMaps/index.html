@@ -156,7 +156,7 @@
     addEventsToMiddleMarkers = function(marker) {
         marker.on('dragstart', startDragMid);
         marker.on('dragend', endDragMid);
-        marker.on('mouseover', mouseOverMarker);
+        marker.on('mouseover', mouseOverMarkerMiddle);
         marker.on('mouseout', mouseOutMarkerMid);
         marker.on('click', clickOnMarker);
     }
@@ -172,7 +172,9 @@
         }).addTo(map);
         if (polygon2)
             map.removeLayer(polygon2);
-        var len = midMarkers.length;
+        var len = poli.length;
+        if (len != midMarkers.length)
+            alert('ninoooninooo');
         if (len == 1) {
             //update middle marker
             map.removeLayer(midMarkers[0]);
@@ -419,7 +421,7 @@
 
     mouseOverMarkerMiddle = function() {
         this.setIcon(icon4);
-        console.log('no: ' + $.inArray(this, midMarkers));
+        console.log('mid: ' + $.inArray(this, midMarkers));
     }
     mouseOverMarker = function() {
         this.setIcon(icon3);
@@ -435,7 +437,7 @@
 
 
     function onMapClick(e) {
-        console.log('click');
+        //console.log('click');
 
         poli.push(e.latlng);
         if (polygon)
@@ -483,7 +485,7 @@
 
         if (undoIconMarker)
             map.removeLayer(undoIconMarker);
-        console.log('markers count: ' + midMarkers.length);
+       // console.log('markers count: ' + midMarkers.length);
     }
 
     map.on('click', onMapClick);
