@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <script src="jquery-1.11.3.min.js"></script>
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
+    
+    <link rel="stylesheet" type="text/css" href="leaflet-openweathermap.css"/>
+    <script type="text/javascript" src="leaflet-openweathermap.js"></script>
+    <script src="leaflet-editable-polyline.js"></script>
+    <title>Leaflet and OpenStreetMaps</title>
+
+    <style>
+        #map {
+            height: 600px;
+        }
+
+        .div-icon {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            width: 9px;
+            height: 9px;
+            border: 1px solid rgb(255, 0, 0);
+            border-radius: 6px;
+            opacity: 1;
+            background-color: white;
+        }
+
+        .div-icon-mouse-over {
+            background-color: rgb(255, 127, 127);
+        }
+
+        .div-icon-middle {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+   
+
+    <div id="map"></div>
+
+
+    <script type="text/javascript">
+
+
+ 
+        var map = L.map('map', { editable: true }).setView([53.9, 27.566667], 8);
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            id: 'examples.map-i875mjb7',
+            accessToken: 'your.mapbox.public.access.token'
+        }).addTo(map);
+      
+
+        var clouds = L.OWM.clouds({ showLegend: false, opacity: 0.5 });
+        var city = L.OWM.current({ intervall: 30, lang: 'de' });
+        var baseMaps = { "OSM Standard": osm };
+        var overlayMaps = { "Clouds": clouds, "Cities": city };
+        var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+       
+
+
+
+    </script>
+
+</body>
+
+</html>

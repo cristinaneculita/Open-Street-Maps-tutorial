@@ -19,6 +19,7 @@
     <IISExpressAnonymousAuthentication />
     <IISExpressWindowsAuthentication />
     <IISExpressUseClassicPipelineMode />
+    <UseGlobalApplicationHostFile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -65,17 +66,29 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="directions.png" />
     <Content Include="editable.js" />
     <Content Include="editmarker.png" />
     <Content Include="editmarker2.png" />
     <Content Include="editmarker3.png" />
+    <Content Include="fire.png" />
+    <Content Include="fire_extinguisher.png" />
+    <Content Include="hotel.png" />
     <Content Include="index.bk.html" />
     <Content Include="index.html" />
     <Content Include="index2.html" />
     <Content Include="index3.html" />
+    <Content Include="Index4.html" />
+    <Content Include="Index5.html" />
     <Content Include="jquery-1.11.3.min.js" />
     <Content Include="leaflet-editable-polyline.js" />
-    <Content Include="tile.png" />
+    <Content Include="leaflet-openweathermap.css" />
+    <Content Include="leaflet-openweathermap.js" />
+    <Content Include="orange.png" />
+    <Content Include="owmloading.gif" />
+    <Content Include="polylineWithLayers.js" />
+    <Content Include="station.png" />
+    <Content Include="tree.png" />
     <Content Include="undo_click.png" />
     <Content Include="undo_simple.png" />
     <Content Include="Web.config" />

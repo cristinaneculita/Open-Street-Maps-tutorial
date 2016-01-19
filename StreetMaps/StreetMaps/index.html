@@ -70,7 +70,7 @@
     var undoLatLng;
     var lastMarkerDragged;
 
-    var map = L.map('map', { editable: true }).setView([47.1, 27.5], 8);
+    var map = L.map('map', { editable: true }).setView([53.9, 27.566667], 8);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         id: 'examples.map-i875mjb7',
@@ -173,8 +173,7 @@
         if (polygon2)
             map.removeLayer(polygon2);
         var len = poli.length;
-        if (len != midMarkers.length)
-            alert('ninoooninooo');
+       
         if (len == 1) {
             //update middle marker
             map.removeLayer(midMarkers[0]);

@@ -182,19 +182,19 @@
             if (polyline2)
                 map.removeLayer(polyline2);
             var len = poli.length;
-            if (len == 1) {
-                //update middle marker
-                map.removeLayer(midMarkers[0]);
-                var midPoint = [
-                    (poli[0].lat + poli[1].lat) / 2.,
-                    (poli[0].lng + poli[1].lng) / 2.
-                ];
-                var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
+            //if (len == 1) {
+            //    //update middle marker
+            //    map.removeLayer(midMarkers[0]);
+            //    var midPoint = [
+            //        (poli[0].lat + poli[1].lat) / 2.,
+            //        (poli[0].lng + poli[1].lng) / 2.
+            //    ];
+            //    var newMidMarker = L.marker(midPoint, { draggable: true, icon: icon2 }).addTo(map);
 
-                addEventsToMiddleMarkers(newMidMarker);
-                midMarkers[0] = newMidMarker;
+            //    addEventsToMiddleMarkers(newMidMarker);
+            //    midMarkers[0] = newMidMarker;
 
-            }
+            //}
             if (len > 1) {
 
                 //update right middle marker
@@ -448,16 +448,49 @@
         map.on('click', onMapClick);
 
         var corn_rj = new L.LayerGroup();
+        map.addLayer(corn_rj);
         L.marker([-22, -43.20]).addTo(corn_rj),
             L.marker([-23, -43.50]).addTo(corn_rj);
+        L.marker([-30, -43]).addTo(corn_rj);
         L.polyline([
             [-22, -43.20],
             [-23, -43.50]
         ],
         { color: '#FFFFFF' }).addTo(corn_rj);
 
+        var circleColor = "#000000";
+   
+        options.color = circleColor;
+        var $style = $("<style type='text/css'>").appendTo('head');
+        var css = "\
+            .div-icon {border:  1px solid "+circleColor +";}";
+        $style.html(css);
 
-        map.addLayer(corn_rj);
+        function cutHex(h) {return (h.charAt(0)=="#") ? h.substring(1,7):h}
+        function hexToR(h) { return parseInt((cutHex(h)).substring(0, 2), 16) }
+        function hexToG(h) { return parseInt((cutHex(h)).substring(2, 4), 16) }
+        function hexToB(h) { return parseInt((cutHex(h)).substring(4, 6), 16) }
+
+
+        var red = hexToR(circleColor);
+        var green = hexToG(circleColor);
+        var blue = hexToB(circleColor);
+
+        var correctionFactor = 0.5;
+        red = parseInt((255 - red) * correctionFactor + red);
+        green = parseInt((255 - green) * correctionFactor + green);
+        blue = parseInt((255 - blue) * correctionFactor + blue);
+
+        var $style2 = $("<style type='text/css'>").appendTo('head');
+        var css = "\
+             .div-icon-mouse-over { background-color: rgb(" + red + "," + green + "," + blue + ");}";
+        debugger;
+        $style2.html(css);
+
+       
+
+
+
 
 
     </script>
